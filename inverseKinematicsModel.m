@@ -1,0 +1,324 @@
+function JennThomasHW2GUI
+close all
+% lengths of links
+l1 = 7;
+l2 = 10;
+l3 = 10;
+% starting theta values
+x = 0; y = 15; z = 20;
+pointString = sprintf('Point: %d, %d, %d', x,y,z);
+xPoints = []; yPoints = []; zPoints = [];
+% get values and points and graph them
+calcValues();
+
+% draw GUI
+% GUI variables
+scrsz = get(groot,'ScreenSize');
+plotWidth = scrsz(3)/1.2/3.5;
+plotHeight = scrsz(4)/3;
+% figure and graphics
+h = figure('Position',[scrsz(4)/8 scrsz(4)/2 scrsz(3)/1.2 scrsz(4)/1.1],...
+    'Resize','off','Name','Inverse Kinematics','Toolbar','none',...
+    'NumberTitle','off','MenuBar','none','Visible','off');
+hp = uipanel('Title','Inverse Kinematics','FontSize',30,...
+    'BackgroundColor','white',...
+    'Position',[0.005 0.005 .99 .99]);
+% CONTROLS
+hsp = uipanel('Parent',hp,'Title','Control Panel','FontSize',14,...
+    'Position',[.025 .025 .5 .47]);
+% radio buttons
+radioBtns = uibuttongroup('Parent',hsp,'Title','Control by:',...
+    'Position',[.008 .79 .985 .2],...
+    'SelectionChangedFcn',@radioSelection);
+% Create two radio buttons in the button group.
+r1 = uicontrol(radioBtns,'Style',...
+    'radiobutton',...
+    'String','Slider',...
+    'Position',[100 0 100 55],...
+    'HandleVisibility','off');
+
+r2 = uicontrol(radioBtns,'Style','radiobutton',...
+    'String','Point',...
+    'Position',[200 0 100 55],...
+    'HandleVisibility','off');
+
+% r3 = uicontrol(radioBtns,'Style','radiobutton',...
+%     'String','Click on Plot',...
+%     'Position',[300 0 150 55],...
+%     'HandleVisibility','off');
+
+% Text showing x,y,z position
+pointLocation = uipanel('Parent',hsp,...
+    'Position',[.6 .77 .25 .22]);
+pointText = uicontrol('Parent',pointLocation,'Style','text',...
+    'Position',[0 0 125 43],'fontsize',15,...
+    'String', pointString);
+% slider group
+sliders = uipanel('Parent',hsp,'Title','Sliders',...
+    'Position',[.008 .05 .985 .7]);
+sXPoint = uicontrol('Parent',sliders,'Style','slider',...
+    'Min',-20,'Max',20,'Value',x,...
+    'Position',[125 125 250 55],...
+    'Callback', @sx,...
+    'HandleVisibility','off');
+txt1 = uicontrol('Parent',sliders,'Style','text',...
+    'Position',[125 140 250 20],...
+    'String','X Slider');
+
+sYPoint = uicontrol('Parent',sliders,'Style','slider',...
+    'Min',0,'Max',20,'Value',y,...
+    'Position',[125 75 250 55],...
+    'Callback', @sy,...
+    'HandleVisibility','off');
+txt2 = uicontrol('Parent',sliders,'Style','text',...
+    'Position',[125 90 250 20],...
+    'String','Y Slider');
+
+s3 = uicontrol('Parent',sliders,'Style','slider',...
+    'Min',10,'Max',22,'Value',z,...
+    'Position',[125 25 250 55],...
+    'Callback', @sz,...
+    'HandleVisibility','off');
+sZPoint = uicontrol('Parent',sliders,'Style','text',...
+    'Position',[125 40 250 20],...
+    'String','Z Slider');
+sliderWarning = uicontrol('Parent',sliders,'Style','text','ForegroundColor','red',...
+    'FontSize',16,'Position',[125 20 250 20],...
+    'String','Warning: X,Y,Z point out of bounds','Visible', 'off');
+% enter point group
+points = uipanel('Parent',hsp,'Title','Enter a Point',...
+    'Position',[.008 .05 .985 .7],'Visible','off','FontSize',14);
+b1 = uicontrol('Parent',points,'Style','edit',...
+    'Min',0,'Max',360,...
+    'Position',[125 155 250 35],...
+    'FontSize',20,...
+    'HandleVisibility','off');
+btxt1 = uicontrol('Parent',points,'Style','text',...
+    'FontSize',20,...
+    'Position',[100 165 20 20],...
+    'String','X');
+
+b2 = uicontrol('Parent',points,'Style','edit',...
+    'Min',0,'Max',360,...
+    'Position',[125 105 250 35],...
+    'FontSize',20,...
+    'HandleVisibility','off');
+btxt2 = uicontrol('Parent',points,'Style','text',...
+    'FontSize',20,...
+    'Position',[100 115 20 20],...
+    'String','Y');
+
+b3 = uicontrol('Parent',points,'Style','edit',...
+    'Min',0,'Max',360,...
+    'Position',[125 55 250 35],...
+    'FontSize',20,...
+    'HandleVisibility','off');
+btxt3 = uicontrol('Parent',points,'Style','text',...
+    'FontSize',20,...
+    'Position',[100 65 20 20],...
+    'String','Z');
+pushBtn = uicontrol('Parent',points,'Style', 'pushbutton', 'String', 'Move Arm',...
+    'Position', [200 20 100 20],...
+    'Callback', @buttonPushed);
+pointsWarning = uicontrol('Parent',points,'Style','text','ForegroundColor','red',...
+    'FontSize',16,'Position',[380 50 125 100],...
+    'String','Warning: X,Y,Z point out of bounds','Visible', 'off');
+% click on point group
+% clicks = uipanel('Parent',hsp,'Title','Click on Point',...
+%     'Position',[.008 .05 .985 .7],'Visible','off');
+% clickTxt = uicontrol('Parent',clicks,'Style','text',...
+%         'FontSize',20,...
+%         'Position',[50 30 400 100],...
+%         'String','Do what it says! Click on the 3d Plot!');
+
+% various plots
+xygraph = axes('Parent',hp,'Units','pixels','Title','XY Plane',...
+    'Position', [39 scrsz(4)/2 plotWidth plotHeight]);
+xy = plot(xPoints, yPoints, '-o'); title('XY Plane'); xlabel('x'); ylabel('y');
+axis([-20 20 0 30]);
+xzgraph = axes('Parent',hp,'Units','pixels','Title','XZ Plane',...
+    'Position', [388 scrsz(4)/2 plotWidth plotHeight]);
+xz = plot(xPoints, zPoints, '-o'); title('ZX Plane'); xlabel('x'); ylabel('z');
+axis([-20 20 0 27]);
+yzgraph = axes('Parent',hp,'Units','pixels','Title','YZ Plane',...
+    'Position', [738 scrsz(4)/2 plotWidth plotHeight]);
+yz = plot(yPoints, zPoints, '-o'); title('ZY Plane'); xlabel('y'); ylabel('z');
+axis([0 30 0 27]);
+threed = axes('Parent',hp,'Units','pixels','Title','3d Plot',...
+    'Position', [650 50 plotWidth scrsz(4)/2.7]);
+plot3d = plot3(xPoints,yPoints,zPoints,'-o'); title('3d Plot - 3 dof arm'); xlabel('x'); ylabel('y'); zlabel('z')
+axis([-20 20 0 30 0 27]); grid on
+h.Visible = 'on';
+refreshdata();
+
+% GUI manipulation functions
+% radio button switch event
+    function radioSelection(hObject, eventdata, handles)
+        switch get(eventdata.NewValue,'String')
+            case 'Slider'
+                sliders.Visible = 'on';
+                points.Visible = 'off';
+                clicks.Visible = 'off';
+                sliderWarning.Visible = 'off';
+            case 'Point'
+                sliders.Visible = 'off';
+                points.Visible = 'on';
+                clicks.Visible = 'off';
+                pointsWarning.Visible = 'off';
+                %             case 'Click on Plot'
+                %                 sliders.Visible = 'off';
+                %                 points.Visible = 'off';
+                %                 clicks.Visible = 'on';
+        end
+    end
+
+% button pushed event
+    function buttonPushed(hObject, eventdata, handles)
+        x0 = str2num(get(b1, 'String'));
+        y0 = str2num(get(b2, 'String'));
+        z0 = str2num(get(b3, 'String'));
+        if isempty(x0) || isempty(y0) || isempty(z0)
+            pointsWarning.String = 'Please enter a value for all three points!';
+            pointsWarning.Visible = 'on';
+        elseif z0 < 10 || z0 > 22
+            pointsWarning.String = 'Please enter a value for z between 7 and 22';
+            pointsWarning.Visible = 'on';
+        elseif x0 < -20 || x0 > 20
+            pointsWarning.String = 'Please enter a value for x between -20 and 20';
+            pointsWarning.Visible = 'on';
+        elseif y0 < 0 || y0 > 20
+            pointsWarning.String = 'Please enter a value for y between 15 and 20';
+            pointsWarning.Visible = 'on';
+        else
+            pointsWarning.Visible = 'off';
+            pointCurrent = [x y z];
+            pointNew = [x0 y0 z0];
+            condition = checkBoundaries(pointNew);
+            if condition
+                animateArm(pointCurrent, pointNew)
+            end
+        end
+    end
+
+% slider for x changes
+    function sx(source,callbackdata)
+        x = source.Value;
+        calcValues();
+        refreshdata();
+    end
+
+% slider for y changes
+    function sy(source,callbackdata)
+        y = source.Value;
+        calcValues();
+        refreshdata();
+    end
+
+% slider for z changes
+    function sz(source,callbackdata)
+        z = source.Value;
+        calcValues();
+        refreshdata();
+    end
+
+% function to calculate theta values and then points at end of links
+    function calcValues()
+        r = sqrt(x^2+y^2);
+        m = sqrt(r^2+(l1-z)^2);
+        cosBeta = (m^2+l2^2-l3^2)/(2*m*l2);
+        cosPiMinus = (l2^2+l3^2-m^2)/(2*l2*l3);
+        try
+            alpha = atan2(l1-z,r);
+            beta = atan2(-1*sqrt(1-cosBeta^2),cosBeta);
+            theta1 = atan2(y,x);
+            theta2 = beta + alpha;
+            cosPiMinus = (l2^2+l3^2-m^2)/(2*l2*l3);
+            theta3 = pi - atan2(sqrt(1-cosPiMinus^2),cosPiMinus);
+            % points of arm:
+            % origin point
+            x0 = 0; y0 = 0; z0 = 0;
+            % origin to link 1
+            x1 = x0; y1 = y0; z1 = l1;
+            % link1 to link2
+            x2 = l2*sin(pi/2-theta2)*cos(theta1); y2 = l2*sin(pi/2-theta2)*sin(theta1); z2 = l1 - l2*sin(theta2);
+            % link2 to link3
+            x3 = x; y3 = y; z3 = z;
+            xPoints = [x0 x1 x2 x3];
+            yPoints = [y0 y1 y2 y3];
+            zPoints = [z0 z1 z2 z3];
+            sqrt((x1-x2)^2+(y1-y2)^2 + (z1-z2)^2)
+            % update graph data
+            xy.XData = xPoints; xz.XData = xPoints; plot3d.XData = xPoints;
+            xy.YData = yPoints; yz.YData = yPoints; plot3d.YData = yPoints;
+            xz.YData = zPoints; yz.YData = zPoints; plot3d.ZData = zPoints;
+            pointString = sprintf('Point: %g, %g, %g', round(x,1),round(y,1),round(z,1));
+            pointText.String = pointString;
+            sliderWarning.Visible = 'off';
+            pointsWarning.Visible = 'off';
+        catch
+            % if out of range
+            if strcmp(sliders.Visible,'on')
+                sliderWarning.Visible = 'on';
+            elseif strcmp(points.Visible,'on')
+                pointsWarning.String = 'Warning: X,Y,Z point out of bounds';
+                pointsWarning.Visible = 'on';
+            end
+        end
+    end
+
+% move the arm from one point to another
+    function animateArm(pointCurrent, pointNew)
+        increment = (pointCurrent - pointNew);
+        direction = sign(increment);
+        addArray = direction*-.1;
+        pointCurrent = round(pointCurrent)
+        while (~isequal(round(pointCurrent),pointNew))
+            if round(pointCurrent(1)) ~= pointNew(1)
+                pointCurrent(1) = pointCurrent(1) + addArray(1);
+            end
+            if round(pointCurrent(2),1) ~= pointNew(2)
+                pointCurrent(2) = pointCurrent(2) + addArray(2);
+            end
+            if round(pointCurrent(3),1) ~= pointNew(3)
+                pointCurrent(3) = pointCurrent(3) + addArray(3);
+            end
+            x = pointCurrent(1);
+            y = pointCurrent(2);
+            z = pointCurrent(3);
+            calcValues()
+            refreshdata();
+            pause(.0001)
+        end
+        x = pointNew(1);
+        y = pointNew(2);
+        z = pointNew(3);
+        calcValues()
+        refreshdata();
+    end
+
+% check to see if arm out of range
+    function condition = checkBoundaries(pointNew)
+        r = sqrt(x^2+y^2);
+        m = sqrt(r^2+(l1-z)^2);
+        cosBeta = (m^2+l2^2-l3^2)/(2*m*l2);
+        cosPiMinus = (l2^2+l3^2-m^2)/(2*l2*l3);
+        try
+            alpha = atan2(l1-z,r);
+            beta = atan2(-1*sqrt(1-cosBeta^2),cosBeta);
+            theta1 = atan2(y,x);
+            theta2 = beta + alpha;
+            cosPiMinus = (l2^2+l3^2-m^2)/(2*l2*l3);
+            theta3 = pi - atan2(sqrt(1-cosPiMinus^2),cosPiMinus);
+            pointsWarning.Visible = 'off';
+            condition = 1;
+        catch
+            if strcmp(points.Visible,'on')
+                pointsWarning.String = 'Warning: X,Y,Z point out of bounds';
+                pointsWarning.Visible = 'on';
+            end
+            condition = 0;
+        end
+        condition;
+    end
+
+end
