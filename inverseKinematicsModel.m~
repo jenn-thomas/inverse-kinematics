@@ -1,4 +1,4 @@
-function inverseKinematicsModel
+function invese
 close all
 % lengths of links
 l1 = 7;
